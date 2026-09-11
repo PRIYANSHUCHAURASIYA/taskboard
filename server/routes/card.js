@@ -13,13 +13,13 @@ router.post('/' , async (req , res) =>{
         const { title , description , listId , dueDate , assignee } = req.body;
 
         const list = await List.findById(listId);
-        if(!listId){
+        if(!list){
             return res.status(404).json({
                 message:'List not found'
             });
         }
         const lastCard = await Card.findOne({list:listId}).sort({order:-1});
-        const order = lastCard ? lastCard + 1 : 0; // ordering from decending order
+        const order = lastCard ? lastCard.order + 1 : 0; // ordering from decending order
 
         const card = await Card.create({title , description , list : listId , order , dueDate , assignee});
 
