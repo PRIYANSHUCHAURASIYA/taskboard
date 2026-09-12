@@ -4,7 +4,7 @@
 
 
 import { useEffect , useState } from "react";
-import { useParams , useNavigate } from "react-router-dom";
+import { useParams , useNavigate, data } from "react-router-dom";
 import API from "../api/axios";
 
 function BoardDetail() {
@@ -40,4 +40,54 @@ function BoardDetail() {
             setLoading(false);
         }
     };
+    useEffect(() =>{
+        fetchListsAndCards();
+
+    }, [boardId]);
+
+    const handleCreateList = async(e) =>{
+        e.preventDefualt();
+        if(!newListTitle.trim())return;
+        setCreatingList(true);
+
+        try{
+            const res = await API.post("/api/lists" , {
+                title:newListTitle,
+                boardId,
+            });
+            setLists((prev) => [...prev , res.data]);
+            setCardsByList((prev) => ({ ...prev , [res.data._id] : [] }));
+            setNewTitle("");
+        }catch(err){
+            setError(err.response?.data?.message || "Failed to create list");
+        }
+        finally{
+            setCreatingList(false);
+        }
+
+    };
+    const handleCreateCard = async(e , listId) =>{
+        e.preventDefualt();
+        const title = setNewCardTitle[listId]?.trim();
+        if(!title)return;
+
+        setCreatingCard((prev) => ({...prev , [listId] : true}));
+        try{
+            const res = await API.post("/api/cards" , {
+                title,
+                listId
+            });
+            setCardsByList((prev) =>({
+                ...prev,
+                [listId] : [...(prev[listId] || []) , res.data]
+            }));
+            setNewCardTitle((prev) => ({ ...prev , [listId] : ""}));
+        }catch(err){
+            setError(err.response?.data?.message || "Failed to  create card")
+        }finally {
+            setCreatingCard((prev) =>({...prev , [listId] : false}));
+        }
+    };
+
+    if(loading) return <p className="p-6">Loading board...</p>;
 }
