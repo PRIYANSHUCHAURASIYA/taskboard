@@ -88,7 +88,7 @@ router.put('/:id' , async (req , res)=> {
 
 // UPDATE list order (for drag-and-drop reordering)
 
-router.get('/:id/reorder' , async (req , res)=>{
+router.put('/:id/reorder' , async (req , res)=>{
     try{
         const { order } = req.body;
         const list = await List.findByIdAndUpdate(req.params.id , { order } , {new:true});
