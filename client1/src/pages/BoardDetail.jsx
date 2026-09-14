@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CardModal from "../components/CardModal";
+import InviteModal from "../components/InviteModal";
+import BoardSettingsMenu from "../components/BoardSettingsMenu";
+import { getCurrentUserId } from "../utils/auth";
 import API from "../api/axios";
 
 function BoardDetail() {
@@ -18,6 +21,11 @@ function BoardDetail() {
     const [newCardTitle, setNewCardTitle] = useState({});
     const [creatingCard, setCreatingCard] = useState({});
     const [selectedCard, setSelectedCard] = useState(null);
+    const [showInvite, setShowInvite] = useState(false);
+    const [board, setBoard] = useState(null);
+
+    const currentUserId = getCurrentUserId();
+    const isOwner = board && currentUserId && board.owner === currentUserId;
 
     const fetchListsAndCards = async () => {
         try {
@@ -41,6 +49,18 @@ function BoardDetail() {
 
     useEffect(() => {
         fetchListsAndCards();
+    }, [boardId]);
+
+    useEffect(() => {
+        const fetchBoard = async () => {
+            try {
+                const res = await API.get(`/api/boards/${boardId}`);
+                setBoard(res.data);
+            } catch (err) {
+                setError(err.response?.data?.message || "Failed to load board info");
+            }
+        };
+        fetchBoard();
     }, [boardId]);
 
     const handleCreateList = async (e) => {
@@ -83,14 +103,11 @@ function BoardDetail() {
         }
     };
 
-    // --- DRAG AND DROP LOGIC ---
     const handleDragEnd = async (result) => {
         const { source, destination, type } = result;
 
-        // dropped outside any droppable
         if (!destination) return;
 
-        // dropped in same place
         if (
             source.droppableId === destination.droppableId &&
             source.index === destination.index
@@ -104,7 +121,6 @@ function BoardDetail() {
             reordered.splice(destination.index, 0, moved);
             setLists(reordered);
 
-            // Persist new order for every list whose position changed
             try {
                 await Promise.all(
                     reordered.map((list, index) =>
@@ -117,7 +133,6 @@ function BoardDetail() {
             return;
         }
 
-        // CARD drag (default type)
         const sourceListId = source.droppableId;
         const destListId = destination.droppableId;
 
@@ -125,7 +140,6 @@ function BoardDetail() {
         const [movedCard] = sourceCards.splice(source.index, 1);
 
         if (sourceListId === destListId) {
-            // reorder within same list
             sourceCards.splice(destination.index, 0, movedCard);
             setCardsByList((prev) => ({ ...prev, [sourceListId]: sourceCards }));
 
@@ -142,7 +156,6 @@ function BoardDetail() {
                 setError("Failed to save card order");
             }
         } else {
-            // moving to a different list
             const destCards = Array.from(cardsByList[destListId] || []);
             destCards.splice(destination.index, 0, movedCard);
 
@@ -203,6 +216,25 @@ function BoardDetail() {
                 >
                     ← Back to Boards
                 </button>
+
+                <div className="flex items-center gap-4">
+                    <h1 className="font-semibold text-lg">{board?.title}</h1>
+                    <span className="text-sm text-gray-500">
+                        {board?.members?.length || 0} member(s)
+                    </span>
+                    <button
+                        onClick={() => setShowInvite(true)}
+                        className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
+                    >
+                        + Invite
+                    </button>
+                    {isOwner && (
+                        <BoardSettingsMenu
+                            board={board}
+                            onRenamed={(updatedBoard) => setBoard(updatedBoard)}
+                        />
+                    )}
+                </div>
             </div>
 
             {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -264,6 +296,14 @@ function BoardDetail() {
                                                                             {card.description && (
                                                                                 <p className="text-xs text-gray-500">
                                                                                     {card.description}
+                                                                                </p>
+                                                                            )}
+                                                                            {card.dueDate && (
+                                                                                <p className="text-xs text-orange-500 mt-1">
+                                                                                    Due{" "}
+                                                                                    {new Date(
+                                                                                        card.dueDate
+                                                                                    ).toLocaleDateString()}
                                                                                 </p>
                                                                             )}
                                                                         </div>
@@ -333,9 +373,18 @@ function BoardDetail() {
             {selectedCard && (
                 <CardModal
                     card={selectedCard}
+                    members={board?.members || []}
                     onClose={() => setSelectedCard(null)}
                     onUpdated={handleCardUpdated}
                     onDeleted={handleCardDeleted}
+                />
+            )}
+
+            {showInvite && (
+                <InviteModal
+                    boardId={boardId}
+                    onClose={() => setShowInvite(false)}
+                    onInvited={(updatedBoard) => setBoard(updatedBoard)}
                 />
             )}
         </div>

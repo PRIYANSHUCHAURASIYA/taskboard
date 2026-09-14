@@ -1,50 +1,51 @@
 import { useState } from "react";
-
 import API from "../api/axios";
-function CardModal({card , onClose , onUpdated , onDeleted }) {
-    const [ title , setTitle] = useState(card.title);
-    const [ description , setDescription] = useState(card.description || "");
-    const [dueDate , setDueDate] = useState(
-        card.dueDate ? card.dueDate.slice(0 , 10) : ""
+
+function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
+    const [title, setTitle] = useState(card.title);
+    const [description, setDescription] = useState(card.description || "");
+    const [dueDate, setDueDate] = useState(
+        card.dueDate ? card.dueDate.slice(0, 10) : ""
     );
+    const [assignee, setAssignee] = useState(card.assignee || "");
+    const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [error, setError] = useState("");
 
-    const [ saving , setSaving ] = useState(false);
-    const [deleting , setDeleting ] = useState(false);
-    const [error , setError] = useState("");
-
-    const handleSave = async () =>{
+    const handleSave = async () => {
         setSaving(true);
         setError("");
-        try{
-            const res = await API.post(`/api/cards/${card._id}` , {
+        try {
+            const res = await API.put(`/api/cards/${card._id}`, {
                 title,
                 description,
-                dueDate : dueDate || null
+                dueDate: dueDate || null,
+                assignee: assignee || null,
             });
             onUpdated(res.data);
             onClose();
-        }catch(err){
-            setError(err.response?.data?.message || "Failed to save ")
-        }finally{
-            setSaving(false)
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to save card");
+        } finally {
+            setSaving(false);
         }
-    } ;
+    };
 
-    const handleDelete = async () =>{
+    const handleDelete = async () => {
         setDeleting(true);
         setError("");
-        try{
-            const res = await API.delete(`/api/cards/${card._id}`);
+        try {
+            await API.delete(`/api/cards/${card._id}`);
             onDeleted(card._id);
             onClose();
-        }catch(err){
-            setError(err.response?.data?.message || "Failed to delete card")
-        }finally{
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to delete card");
+        } finally {
             setDeleting(false);
         }
     };
 
-     return (
+    return (
         <div
             className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
             onClick={onClose}
@@ -55,10 +56,7 @@ function CardModal({card , onClose , onUpdated , onDeleted }) {
             >
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-semibold">Edit Card</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600"
-                    >
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         ✕
                     </button>
                 </div>
@@ -86,8 +84,22 @@ function CardModal({card , onClose , onUpdated , onDeleted }) {
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full border rounded px-3 py-2 mb-6"
+                    className="w-full border rounded px-3 py-2 mb-4"
                 />
+
+                <label className="block text-sm font-medium mb-1">Assignee</label>
+                <select
+                    value={assignee}
+                    onChange={(e) => setAssignee(e.target.value)}
+                    className="w-full border rounded px-3 py-2 mb-6"
+                >
+                    <option value="">Unassigned</option>
+                    {members.map((m) => (
+                        <option key={m._id} value={m._id}>
+                            {m.name} ({m.email})
+                        </option>
+                    ))}
+                </select>
 
                 <div className="flex justify-between">
                     <button

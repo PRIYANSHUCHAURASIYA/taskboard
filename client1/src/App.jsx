@@ -3,11 +3,11 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Boards from "./pages/Boards";
 import BoardDetail from "./pages/BoardDetail";
-// @ts-ignore
-import ProtectedRoute from "./components/ProtectedRoute";
+
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 function App() {
-    const isAuthenticated = !!localStorage.getItem('token');
+    const isAuthenticated = !!localStorage.getItem("token");
     return (
         <BrowserRouter>
             <Routes>
