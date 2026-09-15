@@ -1,1 +1,21 @@
-{}
+{
+  "name": "taskboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "dev": "vite"
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PRIYANSHUCHAURASIYA/taskboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PRIYANSHUCHAURASIYA/taskboard/issues"
+  },
+  "homepage": "https://github.com/PRIYANSHUCHAURASIYA/taskboard#readme"
+}

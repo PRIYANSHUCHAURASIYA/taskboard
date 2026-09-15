@@ -6,6 +6,9 @@ import InviteModal from "../components/InviteModal";
 import BoardSettingsMenu from "../components/BoardSettingsMenu";
 import { getCurrentUserId } from "../utils/auth";
 import API from "../api/axios";
+import InlineSpinner from "../components/InlineSpinner";
+import Spinner from "../components/Spinner";
+import Toast from "../components/Toast";
 
 function BoardDetail() {
     const { boardId } = useParams();
@@ -205,7 +208,7 @@ function BoardDetail() {
         });
     };
 
-    if (loading) return <p className="p-6">Loading board...</p>;
+    if (loading) return <Spinner size="lg" />;
 
     return (
         <div className="min-h-screen bg-gray-100 p-6">
@@ -237,7 +240,7 @@ function BoardDetail() {
                 </div>
             </div>
 
-            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <Toast message={error} onClose={() => setError("")} />
 
             <DragDropContext onDragEnd={handleDragEnd}>
                 <Droppable droppableId="all-lists" direction="horizontal" type="LIST">
@@ -335,9 +338,9 @@ function BoardDetail() {
                                                 <button
                                                     type="submit"
                                                     disabled={creatingCard[list._id]}
-                                                    className="bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                                                    className="bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
                                                 >
-                                                    +
+                                                    {creatingCard[list._id] ? <InlineSpinner /> : "+"}
                                                 </button>
                                             </form>
                                         </div>
@@ -359,8 +362,9 @@ function BoardDetail() {
                                     <button
                                         type="submit"
                                         disabled={creatingList}
-                                        className="bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                                        className="bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
+                                        {creatingList && <InlineSpinner />}
                                         {creatingList ? "Adding..." : "Add List"}
                                     </button>
                                 </form>

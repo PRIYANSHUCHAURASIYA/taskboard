@@ -1,156 +1,80 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
+import InlineSpinner from "../components/InlineSpinner";
 
 function Login() {
+    const [form, setForm] = useState({ email: "", password: "" });
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({
-        email: "",
-        password: "",
-    });
-
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-
     const handleChange = (e) => {
-        const { name, value } = e.target;
-
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setForm({ ...form, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         setError("");
-
-        if (!formData.email || !formData.password) {
-            setError("Please enter email and password");
-            return;
-        }
-
+        setLoading(true);
         try {
-            setLoading(true);
-
-            const res = await API.post("/auth/login", {
-                email: formData.email,
-                password: formData.password,
-            });
-
-            // Save JWT token
+            const res = await API.post("/api/auth/login", form);
             localStorage.setItem("token", res.data.token);
-
-            // Save user information if needed
-            if (res.data.user) {
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify(res.data.user)
-                );
-            }
-
-            // Go to boards page
             navigate("/");
         } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                    "Login failed. Please try again."
-            );
+            setError(err.response?.data?.message || "Login failed");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-            <div className="w-full max-w-md">
-                <div className="bg-white rounded-2xl shadow-lg p-8">
-                    {/* Heading */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-800">
-                            Welcome Back
-                        </h1>
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <form
+                onSubmit={handleSubmit}
+                className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm"
+            >
+                <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
 
-                        <p className="text-gray-500 mt-2">
-                            Login to your Taskboard account
-                        </p>
-                    </div>
+                {error && (
+                    <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+                )}
 
-                    {/* Error */}
-                    {error && (
-                        <div className="mb-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
-                            {error}
-                        </div>
-                    )}
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full border rounded px-3 py-2 mb-4"
+                />
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                    className="w-full border rounded px-3 py-2 mb-6"
+                />
 
-                    {/* Login Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Email */}
-                        <div>
-                            <label
-                                htmlFor="email"
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Email
-                            </label>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                    {loading && <InlineSpinner />}
+                    {loading ? "Logging in..." : "Login"}
+                </button>
 
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="Enter your email"
-                                autoComplete="email"
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <label
-                                htmlFor="password"
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Password
-                            </label>
-
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder="Enter your password"
-                                autoComplete="current-password"
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-
-                        {/* Submit */}
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? "Logging in..." : "Login"}
-                        </button>
-                    </form>
-
-                    {/* Signup Link */}
-                    <p className="text-center text-sm text-gray-500 mt-6">
-                        Don't have an account?{" "}
-                        <Link
-                            to="/signup"
-                            className="text-blue-600 font-medium hover:underline"
-                        >
-                            Sign up
-                        </Link>
-                    </p>
-                </div>
-            </div>
+                <p className="text-sm text-center mt-4">
+                    Don't have an account?{" "}
+                    <Link to="/signup" className="text-blue-600 hover:underline">
+                        Sign up
+                    </Link>
+                </p>
+            </form>
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import API from "../api/axios";
+import InlineSpinner from "./InlineSpinner";
 
 function InviteModal({ boardId , onClose , onInvited}) {
     const [email , setEmail ] = useState("");
@@ -55,6 +56,7 @@ function InviteModal({ boardId , onClose , onInvited}) {
                                 type="submit"
                                 disabled={inviting}
                                 className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+                                    {inviting && <InlineSpinner />}
                                     {inviting ? "Inviting..." : "Invite"}
                                 </button>
                         </form>

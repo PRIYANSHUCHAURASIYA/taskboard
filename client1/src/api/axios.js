@@ -12,7 +12,7 @@ import axios from "axios";
 //  I don't have to repeat the backend URL in every API request
 
 const API = axios.create({
-    baseURL : 'http://localhost:5000/api',
+    baseURL : 'http://localhost:5000',
 }) ;
 
 // interceptors => An interceptor allows us to execute logic before a request is sent or after a

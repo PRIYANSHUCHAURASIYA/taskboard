@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import API from "../api/axios";
+import InlineSpinner from "./InlineSpinner";
+import { getCurrentUserId } from "../utils/auth";
 
 function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
     const [title, setTitle] = useState(card.title);
@@ -11,6 +13,55 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState("");
+
+    const [comments, setComments] = useState([]);
+    const [loadingComments, setLoadingComments] = useState(true);
+    const [newComment, setNewComment] = useState("");
+    const [postingComment, setPostingComment] = useState(false);
+
+    const currentUserId = getCurrentUserId();
+
+    useEffect(() => {
+        const fetchComments = async () => {
+            try {
+                const res = await API.get(`/api/comments/card/${card._id}`);
+                setComments(res.data);
+            } catch (err) {
+                // silently ignore for now, non-critical to the modal
+            } finally {
+                setLoadingComments(false);
+            }
+        };
+        fetchComments();
+    }, [card._id]);
+
+    const handlePostComment = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+
+        setPostingComment(true);
+        try {
+            const res = await API.post("/api/comments", {
+                text: newComment,
+                cardId: card._id,
+            });
+            setComments((prev) => [...prev, res.data]);
+            setNewComment("");
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to post comment");
+        } finally {
+            setPostingComment(false);
+        }
+    };
+
+    const handleDeleteComment = async (commentId) => {
+        try {
+            await API.delete(`/api/comments/${commentId}`);
+            setComments((prev) => prev.filter((c) => c._id !== commentId));
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to delete comment");
+        }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -51,7 +102,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
+                className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-4">
@@ -101,7 +152,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
                     ))}
                 </select>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between mb-6">
                     <button
                         onClick={handleDelete}
                         disabled={deleting}
@@ -113,11 +164,63 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                     >
+                        {saving && <InlineSpinner />}
                         {saving ? "Saving..." : "Save Changes"}
                     </button>
                 </div>
+
+                <hr className="mb-4" />
+
+                <h3 className="text-sm font-semibold mb-3">Comments</h3>
+
+                {loadingComments ? (
+                    <p className="text-xs text-gray-400 mb-3">Loading comments...</p>
+                ) : (
+                    <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                        {comments.length === 0 && (
+                            <p className="text-xs text-gray-400">No comments yet</p>
+                        )}
+                        {comments.map((comment) => (
+                            <div key={comment._id} className="bg-gray-50 rounded p-2 text-sm">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <span className="font-medium text-xs">
+                                            {comment.author?.name || "Unknown"}
+                                        </span>
+                                        <p>{comment.text}</p>
+                                    </div>
+                                    {comment.author?._id === currentUserId && (
+                                        <button
+                                            onClick={() => handleDeleteComment(comment._id)}
+                                            className="text-xs text-red-500 hover:underline ml-2"
+                                        >
+                                            Delete
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <form onSubmit={handlePostComment} className="flex gap-2">
+                    <input
+                        type="text"
+                        placeholder="Add a comment..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        className="flex-1 border rounded px-3 py-2 text-sm"
+                    />
+                    <button
+                        type="submit"
+                        disabled={postingComment}
+                        className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                    >
+                        {postingComment ? <InlineSpinner /> : "Post"}
+                    </button>
+                </form>
             </div>
         </div>
     );
