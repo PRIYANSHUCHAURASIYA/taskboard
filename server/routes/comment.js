@@ -1,9 +1,9 @@
 // add comment on the card
 
 import express from "express";
-import Comment from "../models/Comment";
-import Card from "../models/Card";
-import authMiddleware from "../middleware/authMiddleware";
+import Comment from "../models/Comment.js";
+import Card from "../models/Card.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -63,8 +63,10 @@ router.delete("/:id" , async(req , res) =>{
         })
     }catch(err){
         res.status(500).json({
-            message:err.message;
+            message:err.message
         });
     }
 
 });
+
+export default router;

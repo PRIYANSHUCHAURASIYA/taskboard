@@ -66,7 +66,7 @@ router.delete('/:id', async (req, res) => {
 router.post("/:id/invite" , async (req , res) =>{
     try{
         const {email} = req.body;
-        const board = await Board.findOne({_id:res.params.id , owner:req.userId});
+        const board = await Board.findOne({_id:req.params.id , owner:req.userId});
         if(!board){
             return res.status(404).json({
                 message:"board not found or unauthorized"

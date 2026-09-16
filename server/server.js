@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.js';
 import BoardRoutes from './routes/board.js';
 import listRoutes from './routes/list.js';
 import cardRoutes from './routes/card.js'
+import commentRoutes from './routes/comment.js'
 
 dotenv.config();
 
@@ -17,8 +18,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/boards' , BoardRoutes);
 app.use('/api/lists' , listRoutes);
 app.use('/api/cards' , cardRoutes);
+app.use('/api/comments' , commentRoutes);
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+  res.status(200).json({  message: 'Server is running' });
 });
 
 mongoose.connect(process.env.MONGO_URI)

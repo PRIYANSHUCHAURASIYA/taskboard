@@ -14,7 +14,7 @@ function BoardSettingsMenu({ board, onRenamed }) {
         e.preventDefault();
         if (!newTitle.trim()) return;
         try {
-            const res = await API.put(`/api/boards/${board._id}`, { title: newTitle });
+            const res = await API.put(`/boards/${board._id}`, { title: newTitle });
             onRenamed(res.data);
             setRenaming(false);
             setOpen(false);
@@ -31,7 +31,7 @@ function BoardSettingsMenu({ board, onRenamed }) {
 
         setDeleting(true);
         try {
-            await API.delete(`/api/boards/${board._id}`);
+            await API.delete(`/boards/${board._id}`);
             navigate("/");
         } catch (err) {
             setError(err.response?.data?.message || "Failed to delete board");

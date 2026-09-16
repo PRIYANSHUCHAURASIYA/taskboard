@@ -24,4 +24,5 @@ const boardSchema = new mongoose.Schema({
         require:true
     }],
 },{timestamps:true});
+
 export default mongoose.model('Board' , boardSchema);

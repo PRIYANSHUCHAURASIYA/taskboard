@@ -24,7 +24,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
     useEffect(() => {
         const fetchComments = async () => {
             try {
-                const res = await API.get(`/api/comments/card/${card._id}`);
+                const res = await API.get(`/comments/card/${card._id}`);
                 setComments(res.data);
             } catch (err) {
                 // silently ignore for now, non-critical to the modal
@@ -41,7 +41,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
 
         setPostingComment(true);
         try {
-            const res = await API.post("/api/comments", {
+            const res = await API.post("/comments", {
                 text: newComment,
                 cardId: card._id,
             });
@@ -67,7 +67,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
         setSaving(true);
         setError("");
         try {
-            const res = await API.put(`/api/cards/${card._id}`, {
+            const res = await API.put(`/cards/${card._id}`, {
                 title,
                 description,
                 dueDate: dueDate || null,
@@ -86,7 +86,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
         setDeleting(true);
         setError("");
         try {
-            await API.delete(`/api/cards/${card._id}`);
+            await API.delete(`/cards/${card._id}`);
             onDeleted(card._id);
             onClose();
         } catch (err) {
