@@ -18,7 +18,7 @@ function SignUp() {
         setError("");
         setLoading(true);
         try {
-            const res = await API.post("/api/auth/signup", form);
+            const res = await API.post("/auth/signup", form);
             localStorage.setItem("token", res.data.token);
             navigate("/");
         } catch (err) {

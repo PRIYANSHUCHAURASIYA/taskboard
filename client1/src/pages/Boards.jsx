@@ -16,7 +16,7 @@ function Boards() {
 
     const fetchBoards = async () => {
         try {
-            const res = await API.get("/api/boards");
+            const res = await API.get("/boards");
             setBoards(res.data);
         } catch (err) {
             setError(err.response?.data?.message || "Failed to load boards");
@@ -35,7 +35,7 @@ function Boards() {
 
         setCreating(true);
         try {
-            const res = await API.post("/api/boards", { title: newTitle });
+            const res = await API.post("/boards", { title: newTitle });
             setBoards((prev) => [res.data, ...prev]);
             setNewTitle("");
         } catch (err) {

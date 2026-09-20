@@ -32,13 +32,13 @@ function BoardDetail() {
 
     const fetchListsAndCards = async () => {
         try {
-            const listsRes = await API.get(`/api/lists/board/${boardId}`);
+            const listsRes = await API.get(`/lists/board/${boardId}`);
             setLists(listsRes.data);
 
             const cardsMap = {};
             await Promise.all(
                 listsRes.data.map(async (list) => {
-                    const cardsRes = await API.get(`/api/cards/list/${list._id}`);
+                    const cardsRes = await API.get(`/cards/list/${list._id}`);
                     cardsMap[list._id] = cardsRes.data;
                 })
             );
@@ -57,7 +57,7 @@ function BoardDetail() {
     useEffect(() => {
         const fetchBoard = async () => {
             try {
-                const res = await API.get(`/api/boards/${boardId}`);
+                const res = await API.get(`/boards/${boardId}`);
                 setBoard(res.data);
             } catch (err) {
                 setError(err.response?.data?.message || "Failed to load board info");
@@ -72,7 +72,7 @@ function BoardDetail() {
 
         setCreatingList(true);
         try {
-            const res = await API.post("/api/lists", {
+            const res = await API.post("/lists", {
                 title: newListTitle,
                 boardId,
             });
@@ -93,7 +93,7 @@ function BoardDetail() {
 
         setCreatingCard((prev) => ({ ...prev, [listId]: true }));
         try {
-            const res = await API.post("/api/cards", { title, listId });
+            const res = await API.post("/cards", { title, listId });
             setCardsByList((prev) => ({
                 ...prev,
                 [listId]: [...(prev[listId] || []), res.data],
@@ -127,7 +127,7 @@ function BoardDetail() {
             try {
                 await Promise.all(
                     reordered.map((list, index) =>
-                        API.put(`/api/lists/${list._id}/reorder`, { order: index })
+                        API.put(`/lists/${list._id}/reorder`, { order: index })
                     )
                 );
             } catch (err) {
@@ -149,7 +149,7 @@ function BoardDetail() {
             try {
                 await Promise.all(
                     sourceCards.map((card, index) =>
-                        API.put(`/api/cards/${card._id}/move`, {
+                        API.put(`/cards/${card._id}/move`, {
                             listId: sourceListId,
                             order: index,
                         })
@@ -171,13 +171,13 @@ function BoardDetail() {
             try {
                 await Promise.all([
                     ...sourceCards.map((card, index) =>
-                        API.put(`/api/cards/${card._id}/move`, {
+                        API.put(`/cards/${card._id}/move`, {
                             listId: sourceListId,
                             order: index,
                         })
                     ),
                     ...destCards.map((card, index) =>
-                        API.put(`/api/cards/${card._id}/move`, {
+                        API.put(`/cards/${card._id}/move`, {
                             listId: destListId,
                             order: index,
                         })

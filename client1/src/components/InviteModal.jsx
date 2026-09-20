@@ -14,7 +14,7 @@ function InviteModal({ boardId , onClose , onInvited}) {
         setSuccess("");
         setInviting(true);
         try{
-            const res = await API.post(`/api/boards/${boardId}/invite` , { email });
+            const res = await API.post(`/boards/${boardId}/invite` , { email });
             onInvited(res.data);
             setSuccess(`${email} added to the board`);
             setError("");
