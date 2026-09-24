@@ -72,10 +72,7 @@ function BoardDetail() {
 
         setCreatingList(true);
         try {
-            const res = await API.post("/lists", {
-                title: newListTitle,
-                boardId,
-            });
+            const res = await API.post("/lists", { title: newListTitle, boardId });
             setLists((prev) => [...prev, res.data]);
             setCardsByList((prev) => ({ ...prev, [res.data._id]: [] }));
             setNewListTitle("");
@@ -108,22 +105,14 @@ function BoardDetail() {
 
     const handleDragEnd = async (result) => {
         const { source, destination, type } = result;
-
         if (!destination) return;
-
-        if (
-            source.droppableId === destination.droppableId &&
-            source.index === destination.index
-        ) {
-            return;
-        }
+        if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
         if (type === "LIST") {
             const reordered = Array.from(lists);
             const [moved] = reordered.splice(source.index, 1);
             reordered.splice(destination.index, 0, moved);
             setLists(reordered);
-
             try {
                 await Promise.all(
                     reordered.map((list, index) =>
@@ -138,21 +127,16 @@ function BoardDetail() {
 
         const sourceListId = source.droppableId;
         const destListId = destination.droppableId;
-
         const sourceCards = Array.from(cardsByList[sourceListId] || []);
         const [movedCard] = sourceCards.splice(source.index, 1);
 
         if (sourceListId === destListId) {
             sourceCards.splice(destination.index, 0, movedCard);
             setCardsByList((prev) => ({ ...prev, [sourceListId]: sourceCards }));
-
             try {
                 await Promise.all(
                     sourceCards.map((card, index) =>
-                        API.put(`/cards/${card._id}/move`, {
-                            listId: sourceListId,
-                            order: index,
-                        })
+                        API.put(`/cards/${card._id}/move`, { listId: sourceListId, order: index })
                     )
                 );
             } catch (err) {
@@ -161,26 +145,14 @@ function BoardDetail() {
         } else {
             const destCards = Array.from(cardsByList[destListId] || []);
             destCards.splice(destination.index, 0, movedCard);
-
-            setCardsByList((prev) => ({
-                ...prev,
-                [sourceListId]: sourceCards,
-                [destListId]: destCards,
-            }));
-
+            setCardsByList((prev) => ({ ...prev, [sourceListId]: sourceCards, [destListId]: destCards }));
             try {
                 await Promise.all([
                     ...sourceCards.map((card, index) =>
-                        API.put(`/cards/${card._id}/move`, {
-                            listId: sourceListId,
-                            order: index,
-                        })
+                        API.put(`/cards/${card._id}/move`, { listId: sourceListId, order: index })
                     ),
                     ...destCards.map((card, index) =>
-                        API.put(`/cards/${card._id}/move`, {
-                            listId: destListId,
-                            order: index,
-                        })
+                        API.put(`/cards/${card._id}/move`, { listId: destListId, order: index })
                     ),
                 ]);
             } catch (err) {
@@ -211,168 +183,158 @@ function BoardDetail() {
     if (loading) return <Spinner size="lg" />;
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6">
-            <div className="flex justify-between items-center mb-6">
-                <button
-                    onClick={() => navigate("/")}
-                    className="text-blue-600 hover:underline"
-                >
-                    ← Back to Boards
-                </button>
-
-                <div className="flex items-center gap-4">
-                    <h1 className="font-semibold text-lg">{board?.title}</h1>
-                    <span className="text-sm text-gray-500">
-                        {board?.members?.length || 0} member(s)
-                    </span>
+        <div className="min-h-screen bg-paper font-sans">
+            <header className="border-b border-line bg-surface">
+                <div className="px-6 py-4 flex justify-between items-center">
                     <button
-                        onClick={() => setShowInvite(true)}
-                        className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
+                        onClick={() => navigate("/")}
+                        className="text-sm text-ink/60 hover:text-ink transition-colors flex items-center gap-1"
                     >
-                        + Invite
+                        ← Boards
                     </button>
-                    {isOwner && (
-                        <BoardSettingsMenu
-                            board={board}
-                            onRenamed={(updatedBoard) => setBoard(updatedBoard)}
-                        />
-                    )}
+
+                    <div className="flex items-center gap-4">
+                        <h1 className="font-display font-semibold text-lg text-ink">
+                            {board?.title}
+                        </h1>
+                        <span className="text-xs text-ink/40">
+                            {board?.members?.length || 0} member
+                            {(board?.members?.length || 0) !== 1 ? "s" : ""}
+                        </span>
+                        <button
+                            onClick={() => setShowInvite(true)}
+                            className="bg-accent-soft text-accent px-3 py-1.5 rounded-md text-sm font-medium hover:bg-accent/20 transition-colors"
+                        >
+                            + Invite
+                        </button>
+                        {isOwner && (
+                            <BoardSettingsMenu
+                                board={board}
+                                onRenamed={(updatedBoard) => setBoard(updatedBoard)}
+                            />
+                        )}
+                    </div>
                 </div>
-            </div>
+            </header>
 
             <Toast message={error} onClose={() => setError("")} />
 
-            <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="all-lists" direction="horizontal" type="LIST">
-                    {(provided) => (
-                        <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className="flex gap-4 overflow-x-auto pb-4"
-                        >
-                            {lists.map((list, listIndex) => (
-                                <Draggable
-                                    key={list._id}
-                                    draggableId={list._id}
-                                    index={listIndex}
-                                >
-                                    {(provided) => (
-                                        <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            className="bg-white rounded-lg shadow p-4 w-72 flex-shrink-0"
-                                        >
-                                            <h2
-                                                {...provided.dragHandleProps}
-                                                className="font-semibold mb-3 cursor-grab"
+            <main className="p-6">
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="all-lists" direction="horizontal" type="LIST">
+                        {(provided) => (
+                            <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className="flex gap-4 overflow-x-auto pb-4 items-start"
+                            >
+                                {lists.map((list, listIndex) => (
+                                    <Draggable key={list._id} draggableId={list._id} index={listIndex}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                className={`bg-surface border border-line rounded-md p-3 w-72 flex-shrink-0 transition-shadow ${
+                                                    snapshot.isDragging ? "shadow-lg" : ""
+                                                }`}
                                             >
-                                                {list.title}
-                                            </h2>
+                                                <h2
+                                                    {...provided.dragHandleProps}
+                                                    className="font-display font-medium text-sm text-ink mb-3 cursor-grab px-1"
+                                                >
+                                                    {list.title}
+                                                </h2>
 
-                                            <Droppable droppableId={list._id} type="CARD">
-                                                {(provided) => (
-                                                    <div
-                                                        ref={provided.innerRef}
-                                                        {...provided.droppableProps}
-                                                        className="space-y-2 mb-3 min-h-[10px]"
-                                                    >
-                                                        {(cardsByList[list._id] || []).map(
-                                                            (card, cardIndex) => (
-                                                                <Draggable
-                                                                    key={card._id}
-                                                                    draggableId={card._id}
-                                                                    index={cardIndex}
-                                                                >
-                                                                    {(provided) => (
+                                                <Droppable droppableId={list._id} type="CARD">
+                                                    {(provided) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.droppableProps}
+                                                            className="space-y-2 mb-3 min-h-[8px]"
+                                                        >
+                                                            {(cardsByList[list._id] || []).map((card, cardIndex) => (
+                                                                <Draggable key={card._id} draggableId={card._id} index={cardIndex}>
+                                                                    {(provided, snapshot) => (
                                                                         <div
                                                                             ref={provided.innerRef}
                                                                             {...provided.draggableProps}
                                                                             {...provided.dragHandleProps}
-                                                                            onClick={() =>
-                                                                                setSelectedCard(card)
-                                                                            }
-                                                                            className="bg-gray-50 border rounded p-2 text-sm cursor-grab"
+                                                                            onClick={() => setSelectedCard(card)}
+                                                                            className={`bg-paper border border-line rounded-md p-2.5 text-sm cursor-grab transition-shadow ${
+                                                                                snapshot.isDragging ? "shadow-lg" : "hover:border-accent/40"
+                                                                            }`}
                                                                         >
-                                                                            <p className="font-medium">
-                                                                                {card.title}
-                                                                            </p>
+                                                                            <p className="font-medium text-ink">{card.title}</p>
                                                                             {card.description && (
-                                                                                <p className="text-xs text-gray-500">
+                                                                                <p className="text-xs text-ink/50 mt-0.5">
                                                                                     {card.description}
                                                                                 </p>
                                                                             )}
                                                                             {card.dueDate && (
-                                                                                <p className="text-xs text-orange-500 mt-1">
-                                                                                    Due{" "}
-                                                                                    {new Date(
-                                                                                        card.dueDate
-                                                                                    ).toLocaleDateString()}
+                                                                                <p className="text-xs text-accent mt-1.5 font-medium">
+                                                                                    Due {new Date(card.dueDate).toLocaleDateString()}
                                                                                 </p>
                                                                             )}
                                                                         </div>
                                                                     )}
                                                                 </Draggable>
-                                                            )
-                                                        )}
-                                                        {provided.placeholder}
-                                                    </div>
-                                                )}
-                                            </Droppable>
+                                                            ))}
+                                                            {provided.placeholder}
+                                                        </div>
+                                                    )}
+                                                </Droppable>
 
-                                            <form
-                                                onSubmit={(e) => handleCreateCard(e, list._id)}
-                                                className="flex gap-1"
-                                            >
-                                                <input
-                                                    type="text"
-                                                    placeholder="New card"
-                                                    value={newCardTitle[list._id] || ""}
-                                                    onChange={(e) =>
-                                                        setNewCardTitle((prev) => ({
-                                                            ...prev,
-                                                            [list._id]: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="flex-1 border rounded px-2 py-1 text-sm"
-                                                />
-                                                <button
-                                                    type="submit"
-                                                    disabled={creatingCard[list._id]}
-                                                    className="bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-                                                >
-                                                    {creatingCard[list._id] ? <InlineSpinner /> : "+"}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    )}
-                                </Draggable>
-                            ))}
-                            {provided.placeholder}
+                                                <form onSubmit={(e) => handleCreateCard(e, list._id)} className="flex gap-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Add a card…"
+                                                        value={newCardTitle[list._id] || ""}
+                                                        onChange={(e) =>
+                                                            setNewCardTitle((prev) => ({ ...prev, [list._id]: e.target.value }))
+                                                        }
+                                                        className="flex-1 border border-line rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                                                    />
+                                                    <button
+                                                        type="submit"
+                                                        disabled={creatingCard[list._id]}
+                                                        className="bg-accent text-white px-2.5 rounded-md text-sm hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center"
+                                                    >
+                                                        {creatingCard[list._id] ? <InlineSpinner /> : "+"}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
 
-                            <div className="bg-white rounded-lg shadow p-4 w-72 flex-shrink-0">
-                                <h2 className="font-semibold mb-3 text-gray-500">Add List</h2>
-                                <form onSubmit={handleCreateList} className="flex flex-col gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="List title"
-                                        value={newListTitle}
-                                        onChange={(e) => setNewListTitle(e.target.value)}
-                                        className="border rounded px-2 py-1 text-sm"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={creatingList}
-                                        className="bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {creatingList && <InlineSpinner />}
-                                        {creatingList ? "Adding..." : "Add List"}
-                                    </button>
-                                </form>
+                                <div className="bg-surface/50 border border-dashed border-line rounded-md p-3 w-72 flex-shrink-0">
+                                    <h2 className="font-display font-medium text-sm text-ink/50 mb-3">
+                                        Add a list
+                                    </h2>
+                                    <form onSubmit={handleCreateList} className="flex flex-col gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="List name…"
+                                            value={newListTitle}
+                                            onChange={(e) => setNewListTitle(e.target.value)}
+                                            className="border border-line bg-surface rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={creatingList}
+                                            className="bg-accent text-white px-2 py-1.5 rounded-md text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {creatingList && <InlineSpinner />}
+                                            {creatingList ? "Adding" : "Add list"}
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </Droppable>
-            </DragDropContext>
+                        )}
+                    </Droppable>
+                </DragDropContext>
+            </main>
 
             {selectedCard && (
                 <CardModal

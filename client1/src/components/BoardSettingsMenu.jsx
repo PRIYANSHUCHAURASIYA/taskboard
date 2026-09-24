@@ -24,11 +24,8 @@ function BoardSettingsMenu({ board, onRenamed }) {
     };
 
     const handleDelete = async () => {
-        const confirmed = window.confirm(
-            `Delete "${board.title}"? This can't be undone.`
-        );
+        const confirmed = window.confirm(`Delete "${board.title}"? This can't be undone.`);
         if (!confirmed) return;
-
         setDeleting(true);
         try {
             await API.delete(`/boards/${board._id}`);
@@ -40,17 +37,17 @@ function BoardSettingsMenu({ board, onRenamed }) {
     };
 
     return (
-        <div className="relative">
+        <div className="relative font-sans">
             <button
                 onClick={() => setOpen((prev) => !prev)}
-                className="text-gray-500 hover:text-gray-700 px-2 py-1 rounded border"
+                className="text-ink/50 hover:text-ink px-2 py-1 rounded-md border border-line hover:border-ink/30 transition-colors"
             >
                 ⋯
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border p-3 z-10">
-                    {error && <p className="text-red-500 text-xs mb-2">{error}</p>}
+                <div className="absolute right-0 mt-2 w-56 bg-surface border border-line rounded-lg shadow-lg p-3 z-10">
+                    {error && <p className="text-danger text-xs mb-2">{error}</p>}
 
                     {renaming ? (
                         <form onSubmit={handleRename} className="flex flex-col gap-2">
@@ -58,20 +55,20 @@ function BoardSettingsMenu({ board, onRenamed }) {
                                 type="text"
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
-                                className="border rounded px-2 py-1 text-sm"
+                                className="border border-line rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                                 autoFocus
                             />
                             <div className="flex gap-2">
                                 <button
                                     type="submit"
-                                    className="text-sm bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                                    className="text-sm bg-accent text-white px-2 py-1 rounded-md hover:bg-accent/90 transition-colors"
                                 >
                                     Save
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setRenaming(false)}
-                                    className="text-sm text-gray-500 hover:underline"
+                                    className="text-sm text-ink/50 hover:text-ink transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -80,7 +77,7 @@ function BoardSettingsMenu({ board, onRenamed }) {
                     ) : (
                         <button
                             onClick={() => setRenaming(true)}
-                            className="block w-full text-left text-sm px-2 py-1 hover:bg-gray-100 rounded"
+                            className="block w-full text-left text-sm px-2 py-1.5 hover:bg-paper rounded-md text-ink transition-colors"
                         >
                             Rename board
                         </button>
@@ -89,9 +86,9 @@ function BoardSettingsMenu({ board, onRenamed }) {
                     <button
                         onClick={handleDelete}
                         disabled={deleting}
-                        className="block w-full text-left text-sm px-2 py-1 hover:bg-red-50 text-red-600 rounded mt-1 disabled:opacity-50"
+                        className="block w-full text-left text-sm px-2 py-1.5 hover:bg-danger/10 text-danger rounded-md mt-1 disabled:opacity-50 transition-colors"
                     >
-                        {deleting ? "Deleting..." : "Delete board"}
+                        {deleting ? "Deleting…" : "Delete board"}
                     </button>
                 </div>
             )}

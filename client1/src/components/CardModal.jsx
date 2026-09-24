@@ -6,9 +6,7 @@ import { getCurrentUserId } from "../utils/auth";
 function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
     const [title, setTitle] = useState(card.title);
     const [description, setDescription] = useState(card.description || "");
-    const [dueDate, setDueDate] = useState(
-        card.dueDate ? card.dueDate.slice(0, 10) : ""
-    );
+    const [dueDate, setDueDate] = useState(card.dueDate ? card.dueDate.slice(0, 10) : "");
     const [assignee, setAssignee] = useState(card.assignee || "");
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -27,7 +25,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
                 const res = await API.get(`/comments/card/${card._id}`);
                 setComments(res.data);
             } catch (err) {
-                // silently ignore for now, non-critical to the modal
+                // non-critical
             } finally {
                 setLoadingComments(false);
             }
@@ -38,13 +36,9 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
     const handlePostComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim()) return;
-
         setPostingComment(true);
         try {
-            const res = await API.post("/comments", {
-                text: newComment,
-                cardId: card._id,
-            });
+            const res = await API.post("/comments", { text: newComment, cardId: card._id });
             setComments((prev) => [...prev, res.data]);
             setNewComment("");
         } catch (err) {
@@ -56,7 +50,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
 
     const handleDeleteComment = async (commentId) => {
         try {
-            await API.delete(`/api/comments/${commentId}`);
+            await API.delete(`/comments/${commentId}`);
             setComments((prev) => prev.filter((c) => c._id !== commentId));
         } catch (err) {
             setError(err.response?.data?.message || "Failed to delete comment");
@@ -98,129 +92,136 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
 
     return (
         <div
-            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4"
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+                className="bg-surface rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto font-sans"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Edit Card</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                <div className="flex justify-between items-center mb-5">
+                    <h2 className="font-display font-semibold text-lg text-ink">Card details</h2>
+                    <button onClick={onClose} className="text-ink/40 hover:text-ink transition-colors">
                         ✕
                     </button>
                 </div>
 
-                {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+                {error && (
+                    <div className="bg-danger/10 border border-danger/20 text-danger text-sm rounded-md px-3 py-2 mb-4">
+                        {error}
+                    </div>
+                )}
 
-                <label className="block text-sm font-medium mb-1">Title</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">Title</label>
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full border rounded px-3 py-2 mb-4"
+                    className="w-full border border-line rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                 />
 
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">Description</label>
                 <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    className="w-full border rounded px-3 py-2 mb-4"
+                    className="w-full border border-line rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                 />
 
-                <label className="block text-sm font-medium mb-1">Due Date</label>
-                <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full border rounded px-3 py-2 mb-4"
-                />
-
-                <label className="block text-sm font-medium mb-1">Assignee</label>
-                <select
-                    value={assignee}
-                    onChange={(e) => setAssignee(e.target.value)}
-                    className="w-full border rounded px-3 py-2 mb-6"
-                >
-                    <option value="">Unassigned</option>
-                    {members.map((m) => (
-                        <option key={m._id} value={m._id}>
-                            {m.name} ({m.email})
-                        </option>
-                    ))}
-                </select>
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div>
+                        <label className="block text-sm font-medium text-ink mb-1.5">Due date</label>
+                        <input
+                            type="date"
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
+                            className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-ink mb-1.5">Assignee</label>
+                        <select
+                            value={assignee}
+                            onChange={(e) => setAssignee(e.target.value)}
+                            className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                        >
+                            <option value="">Unassigned</option>
+                            {members.map((m) => (
+                                <option key={m._id} value={m._id}>{m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
 
                 <div className="flex justify-between mb-6">
                     <button
                         onClick={handleDelete}
                         disabled={deleting}
-                        className="text-red-600 hover:underline disabled:opacity-50"
+                        className="text-danger text-sm font-medium hover:underline disabled:opacity-50"
                     >
-                        {deleting ? "Deleting..." : "Delete Card"}
+                        {deleting ? "Deleting…" : "Delete card"}
                     </button>
 
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                        className="bg-accent text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
                         {saving && <InlineSpinner />}
-                        {saving ? "Saving..." : "Save Changes"}
+                        {saving ? "Saving" : "Save changes"}
                     </button>
                 </div>
 
-                <hr className="mb-4" />
+                <div className="border-t border-line pt-4">
+                    <h3 className="text-sm font-medium text-ink mb-3">Comments</h3>
 
-                <h3 className="text-sm font-semibold mb-3">Comments</h3>
-
-                {loadingComments ? (
-                    <p className="text-xs text-gray-400 mb-3">Loading comments...</p>
-                ) : (
-                    <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
-                        {comments.length === 0 && (
-                            <p className="text-xs text-gray-400">No comments yet</p>
-                        )}
-                        {comments.map((comment) => (
-                            <div key={comment._id} className="bg-gray-50 rounded p-2 text-sm">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <span className="font-medium text-xs">
-                                            {comment.author?.name || "Unknown"}
-                                        </span>
-                                        <p>{comment.text}</p>
+                    {loadingComments ? (
+                        <p className="text-xs text-ink/40 mb-3">Loading…</p>
+                    ) : (
+                        <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                            {comments.length === 0 && (
+                                <p className="text-xs text-ink/40">No comments yet</p>
+                            )}
+                            {comments.map((comment) => (
+                                <div key={comment._id} className="bg-paper rounded-md p-2.5 text-sm">
+                                    <div className="flex justify-between items-start gap-2">
+                                        <div>
+                                            <span className="font-medium text-xs text-ink/70">
+                                                {comment.author?.name || "Unknown"}
+                                            </span>
+                                            <p className="text-ink">{comment.text}</p>
+                                        </div>
+                                        {comment.author?._id === currentUserId && (
+                                            <button
+                                                onClick={() => handleDeleteComment(comment._id)}
+                                                className="text-xs text-danger hover:underline whitespace-nowrap"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
                                     </div>
-                                    {comment.author?._id === currentUserId && (
-                                        <button
-                                            onClick={() => handleDeleteComment(comment._id)}
-                                            className="text-xs text-red-500 hover:underline ml-2"
-                                        >
-                                            Delete
-                                        </button>
-                                    )}
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    )}
 
-                <form onSubmit={handlePostComment} className="flex gap-2">
-                    <input
-                        type="text"
-                        placeholder="Add a comment..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        className="flex-1 border rounded px-3 py-2 text-sm"
-                    />
-                    <button
-                        type="submit"
-                        disabled={postingComment}
-                        className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center"
-                    >
-                        {postingComment ? <InlineSpinner /> : "Post"}
-                    </button>
-                </form>
+                    <form onSubmit={handlePostComment} className="flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="Add a comment…"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            className="flex-1 border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                        />
+                        <button
+                            type="submit"
+                            disabled={postingComment}
+                            className="bg-accent text-white px-3 py-2 rounded-md text-sm hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center"
+                        >
+                            {postingComment ? <InlineSpinner /> : "Post"}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );

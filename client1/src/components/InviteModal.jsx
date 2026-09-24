@@ -2,66 +2,77 @@ import { useState } from "react";
 import API from "../api/axios";
 import InlineSpinner from "./InlineSpinner";
 
-function InviteModal({ boardId , onClose , onInvited}) {
-    const [email , setEmail ] = useState("");
-    const [inviting , setInviting ] = useState(false);
-    const [error , setError] = useState("");
-    const [success , setSuccess] = useState("");
+function InviteModal({ boardId, onClose, onInvited }) {
+    const [email, setEmail] = useState("");
+    const [inviting, setInviting] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-    const handleInvite = async (e) =>{
+    const handleInvite = async (e) => {
         e.preventDefault();
         setError("");
         setSuccess("");
         setInviting(true);
-        try{
-            const res = await API.post(`/boards/${boardId}/invite` , { email });
+        try {
+            const res = await API.post(`/boards/${boardId}/invite`, { email });
             onInvited(res.data);
             setSuccess(`${email} added to the board`);
-            setError("");
-        }catch(err){
+            setEmail("");
+        } catch (err) {
             setError(err.response?.data?.message || "Failed to invite user");
-        }finally{
+        } finally {
             setInviting(false);
         }
     };
 
     return (
         <div
-            className="fixed inset-0 bg-black/40 flex items-center  justify-center z-50"
-            onClick={onClose}>
-                <div
-                    className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
-                    onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-semibold">Invite Member</h2>
-                            <button
-                                onClick={onClose}
-                                className="text-gray-400 hover:text-gray-600">
-                                    x
-                                </button>
-                        </div>
-                        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-                        {success && <p className="text-green-600 text-sm mb-3">{success}</p>}
+            className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-surface rounded-lg p-6 w-full max-w-sm font-sans"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex justify-between items-center mb-5">
+                    <h2 className="font-display font-semibold text-lg text-ink">Invite a member</h2>
+                    <button onClick={onClose} className="text-ink/40 hover:text-ink transition-colors">
+                        ✕
+                    </button>
+                </div>
 
-                        <form onSubmit={handleInvite}>
-                            <input
-                                type="email"
-                                placeholder="Member's email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full border rounded px-3 py-2 mb-4">
-                            </input>
-                            <button
-                                type="submit"
-                                disabled={inviting}
-                                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
-                                    {inviting && <InlineSpinner />}
-                                    {inviting ? "Inviting..." : "Invite"}
-                                </button>
-                        </form>
+                {error && (
+                    <div className="bg-danger/10 border border-danger/20 text-danger text-sm rounded-md px-3 py-2 mb-4">
+                        {error}
                     </div>
+                )}
+                {success && (
+                    <div className="bg-accent-soft border border-accent/20 text-accent text-sm rounded-md px-3 py-2 mb-4">
+                        {success}
+                    </div>
+                )}
+
+                <form onSubmit={handleInvite}>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Email address</label>
+                    <input
+                        type="email"
+                        placeholder="teammate@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="w-full border border-line rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                    />
+                    <button
+                        type="submit"
+                        disabled={inviting}
+                        className="w-full bg-accent text-white py-2.5 rounded-md text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {inviting && <InlineSpinner />}
+                        {inviting ? "Inviting" : "Send invite"}
+                    </button>
+                </form>
             </div>
+        </div>
     );
 }
 
