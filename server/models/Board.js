@@ -11,17 +11,17 @@ const boardSchema = new mongoose.Schema({
     // for title of board
     title:{
         type:String,
-        require:true
+        required:true
     },
     owner:{
         type : mongoose.Schema.Types.ObjectId,
         ref:'User',
-        require:true
+        required:true
     },
     members:[{
         type:mongoose.Schema.Types.ObjectId,
         ref:'User',
-        require:true
+        required:true
     }],
 },{timestamps:true});
 
