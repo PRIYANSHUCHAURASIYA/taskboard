@@ -4,6 +4,7 @@
 import express from "express"
 import List from "../models/List.js"
 import Board from "../models/Board.js"
+import Card from "../models/Card.js"
 
 import authMiddleware from '../middleware/authMiddleware.js';
 import mongoose from "mongoose";
@@ -91,7 +92,7 @@ router.put('/:id' , async (req , res)=> {
 router.put('/:id/reorder' , async (req , res)=>{
     try{
         const { order } = req.body;
-        const list = await List.findByIdAndUpdate(req.params.id , { order } , {new:true});
+        const list = await List.findOneAndUpdate(req.params.id , { order } , {new:true});
         if(!list){
             return res.status(404).json({
                 message:'List not found'
@@ -107,21 +108,23 @@ router.put('/:id/reorder' , async (req , res)=>{
 
 // Delete a list
 
-router.delete('/:id' , async (req , res) =>{
-    try{
-        const list = await List.findByIdAndDelete(req.params.id);
-        if(!list){
-            return res.status(404).json({
-                message:"List not found"
-            })
-        }
-        res.json({
-            message:"list deleted"
-        })
-    }catch(err){
-        res.status(500).json({
-            message:err.message
-        })
+router.delete('/:id', async (req, res) => {
+    try {
+        const board = await Board.findOne({ _id: req.params.id, owner: req.userId });
+        if (!board) return res.status(404).json({ message: 'Board not found or not authorized' });
+
+        const lists = await List.find({ board: board._id }, "_id");
+        const listIds = lists.map((l) => l._id);
+        const cards = await Card.find({ list: { $in: listIds } }, "_id");
+
+        await Comment.deleteMany({ card: { $in: cards.map((c) => c._id) } });
+        await Card.deleteMany({ list: { $in: listIds } });
+        await List.deleteMany({ board: board._id });
+        await board.deleteOne();
+
+        res.json({ message: 'Board deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
 

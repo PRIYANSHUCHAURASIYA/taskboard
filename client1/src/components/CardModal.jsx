@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import API from "../api/axios";
 import InlineSpinner from "./InlineSpinner";
+import useEscape from "../hooks/useEscape";
 import { getCurrentUserId } from "../utils/auth";
 
 function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
@@ -18,6 +19,8 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
     const [postingComment, setPostingComment] = useState(false);
 
     const currentUserId = getCurrentUserId();
+
+    useEscape(onClose);
 
     useEffect(() => {
         const fetchComments = async () => {

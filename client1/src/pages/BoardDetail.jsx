@@ -4,11 +4,17 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CardModal from "../components/CardModal";
 import InviteModal from "../components/InviteModal";
 import BoardSettingsMenu from "../components/BoardSettingsMenu";
-import { getCurrentUserId } from "../utils/auth";
-import API from "../api/axios";
-import InlineSpinner from "../components/InlineSpinner";
+import ConfirmDialog from "../components/ConfirmDialog";
+import Composer from "../components/Composer";
+import ListHeader from "../components/ListHearder";
+import Avatar from "../components/Avatar";
 import Spinner from "../components/Spinner";
 import Toast from "../components/Toast";
+import { getCurrentUserId } from "../utils/auth";
+import API from "../api/axios";
+
+const formatDue = (d) =>
+    new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 
 function BoardDetail() {
     const { boardId } = useParams();
@@ -18,17 +24,16 @@ function BoardDetail() {
     const [cardsByList, setCardsByList] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
-    const [newListTitle, setNewListTitle] = useState("");
-    const [creatingList, setCreatingList] = useState(false);
-    const [newCardTitle, setNewCardTitle] = useState({});
-    const [creatingCard, setCreatingCard] = useState({});
     const [selectedCard, setSelectedCard] = useState(null);
     const [showInvite, setShowInvite] = useState(false);
     const [board, setBoard] = useState(null);
+    const [listToDelete, setListToDelete] = useState(null);
+    const [deletingList, setDeletingList] = useState(false);
+    const [quickStarting, setQuickStarting] = useState(false);
 
     const currentUserId = getCurrentUserId();
     const isOwner = board && currentUserId && board.owner === currentUserId;
+    const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
 
     const fetchListsAndCards = async () => {
         try {
@@ -66,40 +71,68 @@ function BoardDetail() {
         fetchBoard();
     }, [boardId]);
 
-    const handleCreateList = async (e) => {
-        e.preventDefault();
-        if (!newListTitle.trim()) return;
-
-        setCreatingList(true);
+    const handleCreateList = async (title) => {
         try {
-            const res = await API.post("/lists", { title: newListTitle, boardId });
+            const res = await API.post("/lists", { title, boardId });
             setLists((prev) => [...prev, res.data]);
             setCardsByList((prev) => ({ ...prev, [res.data._id]: [] }));
-            setNewListTitle("");
+            return true;
         } catch (err) {
             setError(err.response?.data?.message || "Failed to create list");
-        } finally {
-            setCreatingList(false);
+            return false;
         }
     };
 
-    const handleCreateCard = async (e, listId) => {
-        e.preventDefault();
-        const title = newCardTitle[listId]?.trim();
-        if (!title) return;
+    const handleQuickStart = async () => {
+        setQuickStarting(true);
+        for (const title of ["To do", "Doing", "Done"]) {
+            const ok = await handleCreateList(title);
+            if (!ok) break;
+        }
+        setQuickStarting(false);
+    };
 
-        setCreatingCard((prev) => ({ ...prev, [listId]: true }));
+    const handleRenameList = async (listId, title) => {
+        const previous = lists.find((l) => l._id === listId)?.title;
+        setLists((prev) => prev.map((l) => (l._id === listId ? { ...l, title } : l)));
+        try {
+            await API.put(`/lists/${listId}`, { title });
+        } catch (err) {
+            setLists((prev) => prev.map((l) => (l._id === listId ? { ...l, title: previous } : l)));
+            setError(err.response?.data?.message || "Failed to rename list");
+        }
+    };
+
+    const handleDeleteList = async () => {
+        if (!listToDelete) return;
+        setDeletingList(true);
+        try {
+            await API.delete(`/lists/${listToDelete._id}`);
+            setLists((prev) => prev.filter((l) => l._id !== listToDelete._id));
+            setCardsByList((prev) => {
+                const next = { ...prev };
+                delete next[listToDelete._id];
+                return next;
+            });
+            setListToDelete(null);
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to delete list");
+        } finally {
+            setDeletingList(false);
+        }
+    };
+
+    const handleCreateCard = async (listId, title) => {
         try {
             const res = await API.post("/cards", { title, listId });
             setCardsByList((prev) => ({
                 ...prev,
                 [listId]: [...(prev[listId] || []), res.data],
             }));
-            setNewCardTitle((prev) => ({ ...prev, [listId]: "" }));
+            return true;
         } catch (err) {
             setError(err.response?.data?.message || "Failed to create card");
-        } finally {
-            setCreatingCard((prev) => ({ ...prev, [listId]: false }));
+            return false;
         }
     };
 
@@ -188,15 +221,13 @@ function BoardDetail() {
                 <div className="px-6 py-4 flex justify-between items-center">
                     <button
                         onClick={() => navigate("/")}
-                        className="text-sm text-ink/60 hover:text-ink transition-colors flex items-center gap-1"
+                        className="text-sm text-ink/60 hover:text-ink transition-colors"
                     >
                         ← Boards
                     </button>
 
                     <div className="flex items-center gap-4">
-                        <h1 className="font-display font-semibold text-lg text-ink">
-                            {board?.title}
-                        </h1>
+                        <h1 className="font-display font-semibold text-lg text-ink">{board?.title}</h1>
                         <span className="text-xs text-ink/40">
                             {board?.members?.length || 0} member
                             {(board?.members?.length || 0) !== 1 ? "s" : ""}
@@ -220,6 +251,22 @@ function BoardDetail() {
             <Toast message={error} onClose={() => setError("")} />
 
             <main className="p-6">
+                {lists.length === 0 && (
+                    <div className="max-w-md mb-6 border border-dashed border-line rounded-lg p-5 bg-surface/50">
+                        <p className="font-display font-medium text-ink mb-1">This board is empty</p>
+                        <p className="text-sm text-ink/60 mb-3">
+                            Lists are the columns your cards move through. Start with a common setup, or add your own below.
+                        </p>
+                        <button
+                            onClick={handleQuickStart}
+                            disabled={quickStarting}
+                            className="bg-accent-soft text-accent px-3 py-1.5 rounded-md text-sm font-medium hover:bg-accent/20 transition-colors disabled:opacity-50"
+                        >
+                            {quickStarting ? "Creating…" : "Create To do / Doing / Done"}
+                        </button>
+                    </div>
+                )}
+
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable droppableId="all-lists" direction="horizontal" type="LIST">
                         {(provided) => (
@@ -238,45 +285,70 @@ function BoardDetail() {
                                                     snapshot.isDragging ? "shadow-lg" : ""
                                                 }`}
                                             >
-                                                <h2
-                                                    {...provided.dragHandleProps}
-                                                    className="font-display font-medium text-sm text-ink mb-3 cursor-grab px-1"
-                                                >
-                                                    {list.title}
-                                                </h2>
+                                                <ListHeader
+                                                    list={list}
+                                                    count={(cardsByList[list._id] || []).length}
+                                                    dragHandleProps={provided.dragHandleProps}
+                                                    onRename={(title) => handleRenameList(list._id, title)}
+                                                    onDelete={() => setListToDelete(list)}
+                                                />
 
                                                 <Droppable droppableId={list._id} type="CARD">
                                                     {(provided) => (
                                                         <div
                                                             ref={provided.innerRef}
                                                             {...provided.droppableProps}
-                                                            className="space-y-2 mb-3 min-h-[8px]"
+                                                            className="space-y-2 mb-2 min-h-[8px]"
                                                         >
                                                             {(cardsByList[list._id] || []).map((card, cardIndex) => (
                                                                 <Draggable key={card._id} draggableId={card._id} index={cardIndex}>
-                                                                    {(provided, snapshot) => (
-                                                                        <div
-                                                                            ref={provided.innerRef}
-                                                                            {...provided.draggableProps}
-                                                                            {...provided.dragHandleProps}
-                                                                            onClick={() => setSelectedCard(card)}
-                                                                            className={`bg-paper border border-line rounded-md p-2.5 text-sm cursor-grab transition-shadow ${
-                                                                                snapshot.isDragging ? "shadow-lg" : "hover:border-accent/40"
-                                                                            }`}
-                                                                        >
-                                                                            <p className="font-medium text-ink">{card.title}</p>
-                                                                            {card.description && (
-                                                                                <p className="text-xs text-ink/50 mt-0.5">
-                                                                                    {card.description}
-                                                                                </p>
-                                                                            )}
-                                                                            {card.dueDate && (
-                                                                                <p className="text-xs text-accent mt-1.5 font-medium">
-                                                                                    Due {new Date(card.dueDate).toLocaleDateString()}
-                                                                                </p>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
+                                                                    {(provided, snapshot) => {
+                                                                        const assignee = board?.members?.find(
+                                                                            (m) => m._id === card.assignee
+                                                                        );
+                                                                        const overdue =
+                                                                            card.dueDate && card.dueDate.slice(0, 10) < todayStr;
+
+                                                                        return (
+                                                                            <div
+                                                                                ref={provided.innerRef}
+                                                                                {...provided.draggableProps}
+                                                                                {...provided.dragHandleProps}
+                                                                                onClick={() => setSelectedCard(card)}
+                                                                                className={`bg-paper border border-line rounded-md p-2.5 text-sm cursor-grab transition-shadow ${
+                                                                                    snapshot.isDragging
+                                                                                        ? "shadow-lg"
+                                                                                        : "hover:border-accent/40"
+                                                                                }`}
+                                                                            >
+                                                                                <p className="font-medium text-ink">{card.title}</p>
+                                                                                {card.description && (
+                                                                                    <p className="text-xs text-ink/50 mt-0.5 line-clamp-2">
+                                                                                        {card.description}
+                                                                                    </p>
+                                                                                )}
+                                                                                {(card.dueDate || assignee) && (
+                                                                                    <div className="flex items-center justify-between mt-2">
+                                                                                        {card.dueDate ? (
+                                                                                            <span
+                                                                                                className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${
+                                                                                                    overdue
+                                                                                                        ? "bg-danger/10 text-danger"
+                                                                                                        : "bg-accent-soft text-accent"
+                                                                                                }`}
+                                                                                            >
+                                                                                                {overdue ? "Overdue · " : ""}
+                                                                                                {formatDue(card.dueDate)}
+                                                                                            </span>
+                                                                                        ) : (
+                                                                                            <span />
+                                                                                        )}
+                                                                                        {assignee && <Avatar name={assignee.name} />}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    }}
                                                                 </Draggable>
                                                             ))}
                                                             {provided.placeholder}
@@ -284,24 +356,12 @@ function BoardDetail() {
                                                     )}
                                                 </Droppable>
 
-                                                <form onSubmit={(e) => handleCreateCard(e, list._id)} className="flex gap-1">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Add a card…"
-                                                        value={newCardTitle[list._id] || ""}
-                                                        onChange={(e) =>
-                                                            setNewCardTitle((prev) => ({ ...prev, [list._id]: e.target.value }))
-                                                        }
-                                                        className="flex-1 border border-line rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
-                                                    />
-                                                    <button
-                                                        type="submit"
-                                                        disabled={creatingCard[list._id]}
-                                                        className="bg-accent text-white px-2.5 rounded-md text-sm hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center"
-                                                    >
-                                                        {creatingCard[list._id] ? <InlineSpinner /> : "+"}
-                                                    </button>
-                                                </form>
+                                                <Composer
+                                                    triggerLabel="Add a card"
+                                                    placeholder="Card title…"
+                                                    submitLabel="Add card"
+                                                    onAdd={(title) => handleCreateCard(list._id, title)}
+                                                />
                                             </div>
                                         )}
                                     </Draggable>
@@ -309,26 +369,12 @@ function BoardDetail() {
                                 {provided.placeholder}
 
                                 <div className="bg-surface/50 border border-dashed border-line rounded-md p-3 w-72 flex-shrink-0">
-                                    <h2 className="font-display font-medium text-sm text-ink/50 mb-3">
-                                        Add a list
-                                    </h2>
-                                    <form onSubmit={handleCreateList} className="flex flex-col gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="List name…"
-                                            value={newListTitle}
-                                            onChange={(e) => setNewListTitle(e.target.value)}
-                                            className="border border-line bg-surface rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
-                                        />
-                                        <button
-                                            type="submit"
-                                            disabled={creatingList}
-                                            className="bg-accent text-white px-2 py-1.5 rounded-md text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                        >
-                                            {creatingList && <InlineSpinner />}
-                                            {creatingList ? "Adding" : "Add list"}
-                                        </button>
-                                    </form>
+                                    <Composer
+                                        triggerLabel="Add a list"
+                                        placeholder="List name…"
+                                        submitLabel="Add list"
+                                        onAdd={handleCreateList}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -351,6 +397,19 @@ function BoardDetail() {
                     boardId={boardId}
                     onClose={() => setShowInvite(false)}
                     onInvited={(updatedBoard) => setBoard(updatedBoard)}
+                />
+            )}
+
+            {listToDelete && (
+                <ConfirmDialog
+                    title="Delete this list?"
+                    message={`"${listToDelete.title}" and its ${
+                        (cardsByList[listToDelete._id] || []).length
+                    } card(s) will be permanently deleted.`}
+                    confirmLabel="Delete list"
+                    loading={deletingList}
+                    onConfirm={handleDeleteList}
+                    onCancel={() => setListToDelete(null)}
                 />
             )}
         </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link , Navigate} from "react-router-dom";
 import API from "../api/axios";
+import PasswordInput from "../components/PasswordInput";
 import InlineSpinner from "../components/InlineSpinner";
 
 function Login() {
@@ -27,6 +28,7 @@ function Login() {
             setLoading(false);
         }
     };
+    if(localStorage.getItem("token"))return <Navigate to="/" replace />
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-paper font-sans">
@@ -72,13 +74,14 @@ function Login() {
                     <label className="block text-sm font-medium text-ink mb-1.5">
                         Password
                     </label>
-                    <input
-                        type="password"
+                    <PasswordInput
                         name="password"
                         value={form.password}
                         onChange={handleChange}
                         required
-                        className="w-full border border-line rounded-md px-3 py-2 mb-6 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                        autoComplete="current-password"
+                        wrapperClassName="mb-6"
+                        className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                     />
 
                     <button

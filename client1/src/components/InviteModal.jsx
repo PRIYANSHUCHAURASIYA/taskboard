@@ -1,5 +1,6 @@
 import { useState } from "react";
 import API from "../api/axios";
+import useEscape from "../hooks/useEscape";
 import InlineSpinner from "./InlineSpinner";
 
 function InviteModal({ boardId, onClose, onInvited }) {
@@ -7,6 +8,7 @@ function InviteModal({ boardId, onClose, onInvited }) {
     const [inviting, setInviting] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    useEscape(onClose);
 
     const handleInvite = async (e) => {
         e.preventDefault();
