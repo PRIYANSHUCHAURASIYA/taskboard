@@ -84,14 +84,14 @@ function SignUp() {
                     <label className="block text-sm font-medium text-ink mb-1.5">
                         Password
                     </label>
-                    <PasswordInput
+                    <input
+                        type="password"
                         name="password"
                         value={form.password}
                         onChange={handleChange}
                         required
-                        autoComplete="current-password"
-                        wrapperClassName="mb-6"
-                        className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                        minLength={6}
+                        className="w-full border border-line rounded-md px-3 py-2 mb-6 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                     />
 
                     <button
