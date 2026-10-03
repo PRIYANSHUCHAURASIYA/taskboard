@@ -6,10 +6,11 @@ import InviteModal from "../components/InviteModal";
 import BoardSettingsMenu from "../components/BoardSettingsMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Composer from "../components/Composer";
-import ListHeader from "../components/ListHearder";
+import ListHeader from "../components/ListHeader";
 import Avatar from "../components/Avatar";
 import Spinner from "../components/Spinner";
 import Toast from "../components/Toast";
+import ThemeToggle from "../components/ThemeToggle";
 import { getCurrentUserId } from "../utils/auth";
 import API from "../api/axios";
 
@@ -33,7 +34,7 @@ function BoardDetail() {
 
     const currentUserId = getCurrentUserId();
     const isOwner = board && currentUserId && board.owner === currentUserId;
-    const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+    const todayStr = new Date().toLocaleDateString("en-CA");
 
     const fetchListsAndCards = async () => {
         try {
@@ -218,20 +219,28 @@ function BoardDetail() {
     return (
         <div className="min-h-screen bg-paper font-sans">
             <header className="border-b border-line bg-surface">
-                <div className="px-6 py-4 flex justify-between items-center">
-                    <button
-                        onClick={() => navigate("/")}
-                        className="text-sm text-ink/60 hover:text-ink transition-colors"
-                    >
-                        ← Boards
-                    </button>
+                <div className="px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center justify-between">
+                        <button
+                            onClick={() => navigate("/")}
+                            className="text-sm text-ink/60 hover:text-ink transition-colors"
+                        >
+                            ← Boards
+                        </button>
+                        <h1 className="font-display font-semibold text-lg text-ink sm:hidden">
+                            {board?.title}
+                        </h1>
+                    </div>
 
-                    <div className="flex items-center gap-4">
-                        <h1 className="font-display font-semibold text-lg text-ink">{board?.title}</h1>
+                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-wrap">
+                        <h1 className="hidden sm:block font-display font-semibold text-lg text-ink">
+                            {board?.title}
+                        </h1>
                         <span className="text-xs text-ink/40">
                             {board?.members?.length || 0} member
                             {(board?.members?.length || 0) !== 1 ? "s" : ""}
                         </span>
+                        <ThemeToggle />
                         <button
                             onClick={() => setShowInvite(true)}
                             className="bg-accent-soft text-accent px-3 py-1.5 rounded-md text-sm font-medium hover:bg-accent/20 transition-colors"
@@ -250,7 +259,7 @@ function BoardDetail() {
 
             <Toast message={error} onClose={() => setError("")} />
 
-            <main className="p-6">
+            <main className="p-4 sm:p-6">
                 {lists.length === 0 && (
                     <div className="max-w-md mb-6 border border-dashed border-line rounded-lg p-5 bg-surface/50">
                         <p className="font-display font-medium text-ink mb-1">This board is empty</p>
@@ -321,7 +330,7 @@ function BoardDetail() {
                                                                                         : "hover:border-accent/40"
                                                                                 }`}
                                                                             >
-                                                                                <p className="font-medium text-ink">{card.title}</p>
+                                                                                <p className="font-medium text-white">{card.title}</p>
                                                                                 {card.description && (
                                                                                     <p className="text-xs text-ink/50 mt-0.5 line-clamp-2">
                                                                                         {card.description}

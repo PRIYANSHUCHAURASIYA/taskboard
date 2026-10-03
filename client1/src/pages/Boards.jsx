@@ -4,6 +4,7 @@ import API from "../api/axios";
 import InlineSpinner from "../components/InlineSpinner";
 import Spinner from "../components/Spinner";
 import Toast from "../components/Toast";
+import ThemeToggle from "../components/ThemeToggle";
 
 function Boards() {
     const [boards, setBoards] = useState([]);
@@ -57,7 +58,7 @@ function Boards() {
     return (
         <div className="min-h-screen bg-paper font-sans">
             <header className="border-b border-line bg-surface">
-                <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="h-7 w-7 bg-accent rounded-sm flex items-center justify-center">
                             <div className="h-2.5 w-2.5 bg-paper rounded-[2px]" />
@@ -66,18 +67,21 @@ function Boards() {
                             Taskboard
                         </span>
                     </div>
-                    <button
-                        onClick={handleLogout}
-                        className="text-sm text-ink/60 hover:text-ink transition-colors"
-                    >
-                        Log out
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <ThemeToggle />
+                        <button
+                            onClick={handleLogout}
+                            className="text-sm text-ink/60 hover:text-ink transition-colors"
+                        >
+                            Log out
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <main className="max-w-5xl mx-auto px-6 py-10">
+            <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="font-display font-semibold text-2xl text-ink">
+                    <h1 className="font-display font-semibold text-xl sm:text-2xl text-ink">
                         Your boards
                     </h1>
                 </div>
@@ -89,7 +93,7 @@ function Boards() {
                             placeholder="Name a new board…"
                             value={newTitle}
                             onChange={(e) => setNewTitle(e.target.value)}
-                            className="flex-1 border border-line bg-surface rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                            className="flex-1 min-w-0 border border-line bg-surface rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                         />
                         <button
                             type="submit"
@@ -107,7 +111,7 @@ function Boards() {
                             placeholder="Search…"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="border border-line bg-surface rounded-md px-3 py-2 text-sm w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                            className="border border-line bg-surface rounded-md px-3 py-2 text-sm text-ink w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                         />
                     )}
                 </div>

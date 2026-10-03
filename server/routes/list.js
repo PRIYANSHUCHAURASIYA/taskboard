@@ -1,23 +1,18 @@
-// how findByIdAndUpdate works = { id , updated List }
-
-
 import express from "express"
 import List from "../models/List.js"
 import Board from "../models/Board.js"
 import Card from "../models/Card.js"
+import Comment from "../models/Comment.js"
 
 import authMiddleware from '../middleware/authMiddleware.js';
-import mongoose from "mongoose";
 
 const router = express.Router();
 router.use(authMiddleware);
 
 // create list within board
-
 router.post('/' , async (req , res) =>{
     try{
         const {title , boardId } = req.body;
-        // verify the board members
         const board = await Board.findOne({_id:boardId , members:req.userId});
 
         if(!board){
@@ -25,7 +20,6 @@ router.post('/' , async (req , res) =>{
                 message:'Board not found or not authorized'
             });
         }
-        // Find current max order for this board's lists
         const lastList = await List.findOne({board:boardId}).sort({order: -1});
         const order = lastList ? lastList.order + 1  : 0;
 
@@ -43,7 +37,6 @@ router.post('/' , async (req , res) =>{
 });
 
 // get all list for board
-
 router.get('/board/:boardId' , async (req , res) => {
     try{
         const board = await Board.findOne({_id:req.params.boardId , members:req.userId});
@@ -64,21 +57,17 @@ router.get('/board/:boardId' , async (req , res) => {
 });
 
 // update list title
-
 router.put('/:id' , async (req , res)=> {
     try{
-        const { title } = req.body;
-        const list = await List.findByIdAndUpdate(
-            req.params.id ,
-             { title } ,
-             { new :true
+        const list = await List.findById(req.params.id);
+        if(!list) return res.status(404).json({ message: "List not found" });
 
-             });
-        if(!list){
-            return res.status(404).json({
-                message:"List not found"
-            });
-        }
+        const board = await Board.findOne({ _id: list.board, members: req.userId });
+        if(!board) return res.status(404).json({ message: "List not found" });
+
+        const { title } = req.body;
+        list.title = title;
+        await list.save();
         res.json(list);
     } catch(err){
         res.status(500).json({
@@ -88,16 +77,17 @@ router.put('/:id' , async (req , res)=> {
 });
 
 // UPDATE list order (for drag-and-drop reordering)
-
 router.put('/:id/reorder' , async (req , res)=>{
     try{
+        const list = await List.findById(req.params.id);
+        if(!list) return res.status(404).json({ message: 'List not found' });
+
+        const board = await Board.findOne({ _id: list.board, members: req.userId });
+        if(!board) return res.status(404).json({ message: 'List not found' });
+
         const { order } = req.body;
-        const list = await List.findOneAndUpdate(req.params.id , { order } , {new:true});
-        if(!list){
-            return res.status(404).json({
-                message:'List not found'
-            });
-        }
+        list.order = order;
+        await list.save();
         res.json(list);
     }catch(err){
         res.status(500).json({
@@ -107,22 +97,20 @@ router.put('/:id/reorder' , async (req , res)=>{
 });
 
 // Delete a list
-
 router.delete('/:id', async (req, res) => {
     try {
-        const board = await Board.findOne({ _id: req.params.id, owner: req.userId });
-        if (!board) return res.status(404).json({ message: 'Board not found or not authorized' });
+        const list = await List.findById(req.params.id);
+        if (!list) return res.status(404).json({ message: "List not found" });
 
-        const lists = await List.find({ board: board._id }, "_id");
-        const listIds = lists.map((l) => l._id);
-        const cards = await Card.find({ list: { $in: listIds } }, "_id");
+        const board = await Board.findOne({ _id: list.board, members: req.userId });
+        if (!board) return res.status(404).json({ message: "List not found" });
 
+        const cards = await Card.find({ list: list._id }, "_id");
         await Comment.deleteMany({ card: { $in: cards.map((c) => c._id) } });
-        await Card.deleteMany({ list: { $in: listIds } });
-        await List.deleteMany({ board: board._id });
-        await board.deleteOne();
+        await Card.deleteMany({ list: list._id });
+        await list.deleteOne();
 
-        res.json({ message: 'Board deleted' });
+        res.json({ message: "List deleted" });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

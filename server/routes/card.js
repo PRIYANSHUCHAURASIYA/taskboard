@@ -19,7 +19,7 @@ router.post('/' , async (req , res) =>{
             });
         }
         const lastCard = await Card.findOne({list:listId}).sort({order:-1});
-        const order = lastCard ? lastCard.order + 1 : 0; // ordering from decending order
+        const order = lastCard ? lastCard.order + 1 : 0;
 
         const card = await Card.create({title , description , list : listId , order , dueDate , assignee});
 
@@ -32,10 +32,8 @@ router.post('/' , async (req , res) =>{
 });
 
 // get all the  card
-
 router.get('/list/:listId' , async (req , res) =>{
     try{
-        // starting list show karega
         const cards = await Card.find({list:req.params.listId}).sort({order:1});
         res.json(cards);
     }catch(err){
@@ -46,11 +44,10 @@ router.get('/list/:listId' , async (req , res) =>{
 });
 
 // UPDATE a card (title, description, dueDate, assignee)
-
 router.put('/:id' , async (req,res) =>{
     try{
         const update = req.body;
-        const card = await findByIdAndUpdate(req.params.id , update ,{new:true});
+        const card = await Card.findByIdAndUpdate(req.params.id , update ,{new:true});
         if(!card){
             return res.status(404).json({
                 message:"Card not found"
@@ -88,7 +85,6 @@ router.put('/:id/move' , async (req,res) =>{
 });
 
 // Delete a card
-
 router.delete('/:id' , async (req , res) =>{
     try{
         const card = await Card.findByIdAndDelete(req.params.id);
