@@ -25,11 +25,14 @@ function BoardDetail() {
     const [cardsByList, setCardsByList] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [selectedCard, setSelectedCard] = useState(null);
     const [showInvite, setShowInvite] = useState(false);
     const [board, setBoard] = useState(null);
     const [listToDelete, setListToDelete] = useState(null);
     const [deletingList, setDeletingList] = useState(false);
+    const [cardToQuickDelete, setCardToQuickDelete] = useState(null);
+    const [quickDeleting, setQuickDeleting] = useState(false);
     const [quickStarting, setQuickStarting] = useState(false);
 
     const currentUserId = getCurrentUserId();
@@ -72,11 +75,12 @@ function BoardDetail() {
         fetchBoard();
     }, [boardId]);
 
-    const handleCreateList = async (title) => {
+    const handleCreateList = async (title, silent = false) => {
         try {
             const res = await API.post("/lists", { title, boardId });
             setLists((prev) => [...prev, res.data]);
             setCardsByList((prev) => ({ ...prev, [res.data._id]: [] }));
+            if (!silent) setSuccess(`"${title}" list created`);
             return true;
         } catch (err) {
             setError(err.response?.data?.message || "Failed to create list");
@@ -86,10 +90,15 @@ function BoardDetail() {
 
     const handleQuickStart = async () => {
         setQuickStarting(true);
+        let allOk = true;
         for (const title of ["To do", "Doing", "Done"]) {
-            const ok = await handleCreateList(title);
-            if (!ok) break;
+            const ok = await handleCreateList(title, true);
+            if (!ok) {
+                allOk = false;
+                break;
+            }
         }
+        if (allOk) setSuccess("Starter lists created");
         setQuickStarting(false);
     };
 
@@ -115,6 +124,7 @@ function BoardDetail() {
                 delete next[listToDelete._id];
                 return next;
             });
+            setSuccess(`"${listToDelete.title}" deleted`);
             setListToDelete(null);
         } catch (err) {
             setError(err.response?.data?.message || "Failed to delete list");
@@ -202,6 +212,7 @@ function BoardDetail() {
                 c._id === updatedCard._id ? updatedCard : c
             ),
         }));
+        setSuccess("Card saved");
     };
 
     const handleCardDeleted = (cardId) => {
@@ -212,6 +223,21 @@ function BoardDetail() {
             }
             return updated;
         });
+        setSuccess("Card deleted");
+    };
+
+    const handleQuickDeleteCard = async () => {
+        if (!cardToQuickDelete) return;
+        setQuickDeleting(true);
+        try {
+            await API.delete(`/cards/${cardToQuickDelete._id}`);
+            handleCardDeleted(cardToQuickDelete._id);
+            setCardToQuickDelete(null);
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to delete card");
+        } finally {
+            setQuickDeleting(false);
+        }
     };
 
     if (loading) return <Spinner size="lg" />;
@@ -258,6 +284,7 @@ function BoardDetail() {
             </header>
 
             <Toast message={error} onClose={() => setError("")} />
+            <Toast message={success} type="success" onClose={() => setSuccess("")} />
 
             <main className="p-4 sm:p-6">
                 {lists.length === 0 && (
@@ -324,13 +351,23 @@ function BoardDetail() {
                                                                                 {...provided.draggableProps}
                                                                                 {...provided.dragHandleProps}
                                                                                 onClick={() => setSelectedCard(card)}
-                                                                                className={`bg-paper border border-line rounded-md p-2.5 text-sm cursor-grab transition-shadow ${
+                                                                                className={`group relative bg-paper border border-line rounded-md p-2.5 text-sm cursor-grab transition-shadow ${
                                                                                     snapshot.isDragging
                                                                                         ? "shadow-lg"
                                                                                         : "hover:border-accent/40"
                                                                                 }`}
                                                                             >
-                                                                                <p className="font-medium text-white">{card.title}</p>
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setCardToQuickDelete(card);
+                                                                                    }}
+                                                                                    aria-label="Delete card"
+                                                                                    className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded text-xs text-ink/30 hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                                                                                >
+                                                                                    ✕
+                                                                                </button>
+                                                                                <p className="font-medium text-ink pr-5">{card.title}</p>
                                                                                 {card.description && (
                                                                                     <p className="text-xs text-ink/50 mt-0.5 line-clamp-2">
                                                                                         {card.description}
@@ -382,7 +419,7 @@ function BoardDetail() {
                                         triggerLabel="Add a list"
                                         placeholder="List name…"
                                         submitLabel="Add list"
-                                        onAdd={handleCreateList}
+                                        onAdd={(title) => handleCreateList(title)}
                                     />
                                 </div>
                             </div>
@@ -419,6 +456,17 @@ function BoardDetail() {
                     loading={deletingList}
                     onConfirm={handleDeleteList}
                     onCancel={() => setListToDelete(null)}
+                />
+            )}
+
+            {cardToQuickDelete && (
+                <ConfirmDialog
+                    title="Delete this card?"
+                    message={`"${cardToQuickDelete.title}" will be permanently deleted.`}
+                    confirmLabel="Delete card"
+                    loading={quickDeleting}
+                    onConfirm={handleQuickDeleteCard}
+                    onCancel={() => setCardToQuickDelete(null)}
                 />
             )}
         </div>

@@ -3,6 +3,19 @@ import API from "../api/axios";
 import InlineSpinner from "./InlineSpinner";
 import useEscape from "../hooks/useEscape";
 import { getCurrentUserId } from "../utils/auth";
+import { timeAgo } from "../utils/timeAgo";
+
+const dateOffset = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+};
+
+const DUE_CHIPS = [
+    ["Today", 0],
+    ["Tomorrow", 1],
+    ["Next week", 7],
+];
 
 function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
     const [title, setTitle] = useState(card.title);
@@ -95,11 +108,11 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
 
     return (
         <div
-            className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4 animate-overlay-in"
             onClick={onClose}
         >
             <div
-                className="bg-surface rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto font-sans"
+                className="bg-surface rounded-lg p-6 w-full max-w-md max-h-[85vh] overflow-y-auto font-sans animate-modal-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-5">
@@ -120,7 +133,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full border border-line rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                    className="w-full border border-line bg-surface text-ink rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                 />
 
                 <label className="block text-sm font-medium text-ink mb-1.5">Description</label>
@@ -128,33 +141,56 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    className="w-full border border-line rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                    className="w-full border border-line bg-surface text-ink rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                 />
 
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                    <div>
-                        <label className="block text-sm font-medium text-ink mb-1.5">Due date</label>
-                        <input
-                            type="date"
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-ink mb-1.5">Assignee</label>
-                        <select
-                            value={assignee}
-                            onChange={(e) => setAssignee(e.target.value)}
-                            className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                <label className="block text-sm font-medium text-ink mb-1.5">Due date</label>
+                <div className="flex gap-1.5 mb-2 flex-wrap">
+                    {DUE_CHIPS.map(([label, days]) => {
+                        const value = dateOffset(days);
+                        return (
+                            <button
+                                key={label}
+                                type="button"
+                                onClick={() => setDueDate(value)}
+                                className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                                    dueDate === value
+                                        ? "bg-accent text-white border-accent"
+                                        : "border-line text-ink/60 hover:border-accent/40"
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
+                    {dueDate && (
+                        <button
+                            type="button"
+                            onClick={() => setDueDate("")}
+                            className="text-xs px-2 py-1 rounded-md border border-line text-ink/40 hover:text-danger hover:border-danger/40 transition-colors"
                         >
-                            <option value="">Unassigned</option>
-                            {members.map((m) => (
-                                <option key={m._id} value={m._id}>{m.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                            Clear
+                        </button>
+                    )}
                 </div>
+                <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full border border-line bg-surface text-ink rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                />
+
+                <label className="block text-sm font-medium text-ink mb-1.5">Assignee</label>
+                <select
+                    value={assignee}
+                    onChange={(e) => setAssignee(e.target.value)}
+                    className="w-full border border-line bg-surface text-ink rounded-md px-3 py-2 mb-5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                >
+                    <option value="">Unassigned</option>
+                    {members.map((m) => (
+                        <option key={m._id} value={m._id}>{m.name}</option>
+                    ))}
+                </select>
 
                 <div className="flex justify-between mb-6">
                     <button
@@ -192,6 +228,9 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
                                             <span className="font-medium text-xs text-ink/70">
                                                 {comment.author?.name || "Unknown"}
                                             </span>
+                                            <span className="text-xs text-ink/35 ml-1.5">
+                                                {timeAgo(comment.createdAt)}
+                                            </span>
                                             <p className="text-ink">{comment.text}</p>
                                         </div>
                                         {comment.author?._id === currentUserId && (
@@ -214,7 +253,7 @@ function CardModal({ card, members = [], onClose, onUpdated, onDeleted }) {
                             placeholder="Add a comment…"
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            className="flex-1 border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                            className="flex-1 border border-line bg-surface text-ink rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                         />
                         <button
                             type="submit"
